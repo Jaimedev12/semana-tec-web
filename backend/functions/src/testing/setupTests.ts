@@ -1,4 +1,4 @@
-import {jest} from "@jest/globals";
+import {jest} from "@jest/globals/build/index.js";
 
 jest.mock("../firebase", () => {
     const mockFirestore = {

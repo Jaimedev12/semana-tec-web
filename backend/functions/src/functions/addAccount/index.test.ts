@@ -1,7 +1,8 @@
 import * as admin from "firebase-admin";
 import * as test from "firebase-functions-test";
-import {addAccount} from "./index";
+import addAccount from "./index";
 import accountService from "../../db-models/accounts/service";
+import {CloudFunction} from "firebase-functions/v1";
 
 jest.mock("../../db-models/accounts/service");
 
@@ -15,7 +16,7 @@ describe("addAccount", () => {
         admin.initializeApp();
 
         // Wrap the function with the test environment
-        wrapped = testEnv.wrap(addAccount);
+        wrapped = testEnv.wrap(addAccount as CloudFunction<any>);
     });
 
     afterAll(() => {
