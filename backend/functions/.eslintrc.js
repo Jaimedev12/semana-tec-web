@@ -19,6 +19,8 @@ module.exports = {
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
+    ".eslintrc.js",
+    "jest.config.js",
   ],
   plugins: [
     "@typescript-eslint",
