@@ -4,6 +4,8 @@ import { Accordion, AccordionItem } from "@nextui-org/react";
 import { functions, auth } from "./firebase";
 import { httpsCallable } from "firebase/functions";
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import ListOfAccounts from "./listOfAccounts";
+import AddAccountForm from "./addAccountForm";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -19,6 +21,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [accounts, setAccounts] = useState([]);
 
   // Firebase Functions
   const addAccountFunction = httpsCallable(functions, "addAccount");
@@ -37,6 +40,21 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      if (user) {
+        try {
+          const result = await getAllAccountsFromUserFunction({});
+          setAccounts(result.data);
+        } catch (error) {
+          console.error("Error fetching accounts:", error);
+        }
+      }
+    };
+
+    fetchAccounts();
+  }, [user]);
 
   const togglePasswordVisibility = (category, index) => {
     setVisiblePasswords((prev) => ({
@@ -234,84 +252,8 @@ export default function App() {
       <div className="content">
         {user ? (
           <>
-            <div className="categories">
-              <h2>Categorías</h2>
-              <ul>
-                {categories.map((categoryData, index) => (
-                  <li key={index}>
-                    <button
-                      onClick={() => handleCategoryClick(categoryData)}
-                      className="category-button"
-                    >
-                      {categoryData.category}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="add-category">
-                <input
-                  type="text"
-                  placeholder="Nueva categoría"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="input-new-category"
-                />
-                <button onClick={handleAddCategory} className="add-category-button">
-                  Añadir Categoría
-                </button>
-              </div>
-            </div>
-
-            <div className="accounts">
-              {selectedCategory && (
-                <>
-                  <div className="add-account">
-                    <h3>{isEditing ? "Editar Contraseña" : "Añadir Contraseña"}</h3>
-                    <input
-                      type="text"
-                      placeholder="Nombre de la cuenta"
-                      value={newAccount.name}
-                      onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
-                      className="input-new-account"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={newAccount.email}
-                      onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
-                      className="input-new-account"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Contraseña"
-                      value={newAccount.password}
-                      onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
-                      className="input-new-account"
-                    />
-                    <button onClick={isEditing ? handleUpdateAccount : handleAddAccount} className="add-account-button">
-                      {isEditing ? "Actualizar Contraseña" : "Añadir Contraseña"}
-                    </button>
-                  </div>
-
-                  <Accordion>
-                    {selectedCategory.accounts.map((account, accIndex) => (
-                      <AccordionItem
-                        key={accIndex}
-                        title={account.name}
-                        onClick={() => handleAccordionToggle(selectedCategory.category, accIndex)}
-                      >
-                        <p>Email: {account.email}</p>
-                        <p onClick={() => togglePasswordVisibility(selectedCategory.category, accIndex)} style={{ cursor: 'pointer' }}>
-                          {visiblePasswords[`${selectedCategory.category}-${accIndex}`] ? account.password : "*****"}
-                        </p>
-                        <button onClick={() => handleEditAccount(accIndex)} className="edit-button">Editar</button>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </>
-              )}
-            </div>
+            <AddAccountForm accounts={accounts} setAccounts={setAccounts} />
+            <ListOfAccounts accounts={accounts} setAccounts={setAccounts} />
           </>
         ) : (
           <p>Por favor, inicie sesión para ver sus contraseñas.</p>
