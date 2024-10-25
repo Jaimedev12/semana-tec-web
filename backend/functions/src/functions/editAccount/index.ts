@@ -18,6 +18,10 @@ const editAccount = withAuth(async (data) => {
     }
 
     await accountService.update(id, updatedAccount);
+
+    return {
+        success: true,
+    };
 });
 
 export default editAccount;

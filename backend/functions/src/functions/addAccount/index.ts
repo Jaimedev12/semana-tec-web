@@ -9,13 +9,26 @@ const addAccount = withAuth(async (data, context) => {
         throw new functions.https.HttpsError("invalid-argument", "Username and password are required.");
     }
 
-    const newAccount: Account = {
+    console.log("context", context.auth);
+    console.log({
+        userId: context.auth?.uid || "test-user-id",
         username,
         password,
-        userId: context.auth.uid,
+    });
+    console.log("");
+
+    const newAccount: Account = {
+        userId: context.auth?.uid || "test-user-id",
+        username,
+        password,
     };
 
-    await accountService.add(newAccount);
+    const docRef = await accountService.add(newAccount);
+
+    return {
+        success: true,
+        addedId: docRef.id,
+    };
 });
 
 export default addAccount;

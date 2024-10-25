@@ -16,3 +16,4 @@ export const withAuth = (
         return handler(data, {...context, auth: context.auth});
     });
 };
+

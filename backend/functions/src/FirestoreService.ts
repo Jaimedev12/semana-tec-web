@@ -29,7 +29,7 @@ class FirestoreService<T> {
 
     async add(doc: T): Promise<DocumentReference> {
         const parsedDoc = this.schema.parse(doc);
-        return await this.collection.add(parsedDoc as any);
+        return this.collection.add(parsedDoc as any);
     }
 
     async createBlankDoc() {
@@ -49,7 +49,7 @@ class FirestoreService<T> {
         conditions?: { field: string, operator: FirebaseFirestore.WhereFilterOp, value: any }[] | null,
         orderBy?: { field: string, direction: "asc" | "desc" }[] | null,
         limit?: number | null
-    ): Promise<T[]> {
+    ): Promise<any[]> {
         let query: FirebaseFirestore.Query = this.collection;
         if (conditions) {
             // Apply where conditions
@@ -72,13 +72,11 @@ class FirestoreService<T> {
 
         const docs = await query.get();
 
-        // Add the doc id if it is not present in the document, then parse the document with the schema
         return docs.docs.map((doc) => {
-            const data = doc.data();
-            if (!data.id) {
-                data.id = doc.id;
-            }
-            return this.schema.parse(data);
+            return {
+                id: doc.id,
+                ...doc.data(),
+            };
         });
     }
 
