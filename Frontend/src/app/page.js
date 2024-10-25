@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Accordion, AccordionItem } from "@nextui-org/react";
 import { functions, auth } from "./firebase";
 import { httpsCallable } from "firebase/functions";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import ListOfAccounts from "./listOfAccounts";
 import AddAccountForm from "./addAccountForm";
 
@@ -17,10 +17,7 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState(null);
   const [expandedAccordions, setExpandedAccordions] = useState({});
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
   const [accounts, setAccounts] = useState([]);
 
   // Firebase Functions
@@ -56,105 +53,6 @@ export default function App() {
     fetchAccounts();
   }, [user]);
 
-  const togglePasswordVisibility = (category, index) => {
-    setVisiblePasswords((prev) => ({
-      ...prev,
-      [`${category}-${index}`]: !prev[`${category}-${index}`],
-    }));
-  };
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-  };
-
-  const handleAccordionToggle = (category, index) => {
-    setExpandedAccordions((prev) => ({
-      ...prev,
-      [`${category}-${index}`]: !prev[`${category}-${index}`],
-    }));
-  };
-
-  // Función para agregar categorías
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      setCategories((prevCategories) => [
-        ...prevCategories,
-        { category: newCategory, accounts: [] },
-      ]);
-      setNewCategory("");
-    }
-  };
-
-  // Función para agregar cuentas
-  const handleAddAccount = async () => {
-    if (selectedCategory && user) {
-      try {
-        const result = await addAccountFunction({
-          username: newAccount.email,
-          password: newAccount.password,
-        });
-        console.log("Account added:", result.data);
-
-        const updatedCategories = categories.map((categoryData) => {
-          if (categoryData.category === selectedCategory.category) {
-            return {
-              ...categoryData,
-              accounts: [
-                ...categoryData.accounts,
-                { name: newAccount.name, email: newAccount.email, password: newAccount.password },
-              ],
-            };
-          }
-          return categoryData;
-        });
-        setCategories(updatedCategories);
-        setNewAccount({ name: "", email: "", password: "" });
-      } catch (error) {
-        console.error("Error adding account:", error);
-      }
-    } else {
-      console.log("Usuario no autenticado");
-    }
-  };
-
-  const handleEditAccount = (index) => {
-    const accountToEdit = selectedCategory.accounts[index];
-    setNewAccount(accountToEdit);
-    setIsEditing(true);
-    setEditingAccountIndex(index);
-  };
-
-  const handleUpdateAccount = async () => {
-    if (selectedCategory && editingAccountIndex !== null && user) {
-      try {
-        const accountToEdit = selectedCategory.accounts[editingAccountIndex];
-        const result = await editAccountFunction({
-          id: accountToEdit.id,
-          username: newAccount.email,
-          password: newAccount.password,
-        });
-        console.log("Account updated:", result.data);
-
-        const updatedCategories = categories.map((categoryData) => {
-          if (categoryData.category === selectedCategory.category) {
-            const updatedAccounts = [...categoryData.accounts];
-            updatedAccounts[editingAccountIndex] = newAccount;
-            return { ...categoryData, accounts: updatedAccounts };
-          }
-          return categoryData;
-        });
-        setCategories(updatedCategories);
-        setNewAccount({ name: "", email: "", password: "" });
-        setIsEditing(false);
-        setEditingAccountIndex(null);
-      } catch (error) {
-        console.error("Error updating account:", error);
-      }
-    } else {
-      console.log("Usuario no autenticado");
-    }
-  };
-
   const fetchAllAccounts = async () => {
     if (user) {
       try {
@@ -179,30 +77,20 @@ export default function App() {
     }
   };
 
-  const handleLogin = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, authEmail, authPassword);
-      setUser(userCredential.user);
-      setAuthError("");
-    } catch (error) {
-      setAuthError("Error de autenticación: Verifique sus credenciales.");
-    }
-  };
-
   const handleLogout = () => {
     auth.signOut();
     setUser(null);
     console.log("Sesión cerrada");
   };
 
-  const handleRegister = async () => {
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
-      setUser(userCredential.user);
+      const result = await signInWithPopup(auth, provider);
+      setUser(result.user);
       setAuthError("");
-      setIsRegistering(false);
     } catch (error) {
-      setAuthError("Error de registro: Verifique sus datos.");
+      setAuthError("Error al iniciar sesión con Google.");
     }
   };
 
@@ -218,31 +106,7 @@ export default function App() {
             </>
           ) : (
             <>
-              <input
-                type="email"
-                placeholder="Correo electrónico"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                className="auth-input"
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                className="auth-input"
-              />
-              {isRegistering ? (
-                <>
-                  <button onClick={handleRegister} className="register-button">Registrar</button>
-                  <button onClick={() => setIsRegistering(false)} className="toggle-auth-button">Ya tengo cuenta</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={handleLogin} className="login-button">Iniciar Sesión</button>
-                  <button onClick={() => setIsRegistering(true)} className="toggle-auth-button">Registrarse</button>
-                </>
-              )}
+              <button onClick={handleGoogleSignIn} className="google-auth-button">Iniciar sesión con Google</button>
               {authError && <p className="auth-error">{authError}</p>}
             </>
           )}
