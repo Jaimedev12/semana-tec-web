@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { functions } from './firebase';
 import { httpsCallable } from 'firebase/functions';
 
@@ -8,8 +8,34 @@ const AddAccountForm = ({ accounts, setAccounts }) => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [message, setMessage] = useState('');
 
     const addAccountFunction = httpsCallable(functions, 'addAccount');
+
+    useEffect(() => {
+        const checkPassword = async () => {
+            try {
+                const response = await fetch('https://lock-app-back-2.onrender.com/check-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password }),
+                });
+                const data = await response.json();
+                setMessage(data.message);
+                console.log('Password check response:', data);
+            } catch (error) {
+                console.error('Error checking password:', error);
+            }
+        };
+
+        if (password) {
+            checkPassword();
+        } else {
+            setMessage('');
+        }
+    }, [password]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -77,6 +103,7 @@ const AddAccountForm = ({ accounts, setAccounts }) => {
                     className="input-new-account"
                     style={{ border: '1px solid #ccc', borderRadius: '4px' }}
                 />
+                <p style={{ color: message === "La contraseña no ha sido encontrada en brechas de datos." ? 'green' : 'red', fontWeight: 'bold' }}>{message}</p>
             </div>
             <button 
                 type="submit" 
